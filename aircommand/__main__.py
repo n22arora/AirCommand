@@ -9,8 +9,9 @@ from time import monotonic_ns
 import cv2
 
 from .camera import CameraError, open_camera, read_frame
+from .gestures import GestureStabilizer
 from .hand_tracker import create_tracker, detect_landmarks
-from .overlay import draw_fps, draw_landmarks
+from .overlay import draw_fps, draw_gesture, draw_landmarks
 
 
 MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "hand_landmarker.task"
@@ -20,6 +21,7 @@ WINDOW_NAME = "AirCommand"
 def run_preview(camera_index: int) -> None:
     recent_frames = deque(maxlen=30)
     timestamp_ms = -1
+    gestures = GestureStabilizer()
 
     try:
         with create_tracker(MODEL_PATH) as tracker, open_camera(camera_index) as camera:
@@ -29,6 +31,11 @@ def run_preview(camera_index: int) -> None:
                 timestamp_ms = max(monotonic_ns() // 1_000_000, timestamp_ms + 1)
                 hands = detect_landmarks(tracker, frame, timestamp_ms)
                 draw_landmarks(frame, hands)
+                height, width = frame.shape[:2]
+                labels = gestures.update(hands, width, height)
+                for hand, label in zip(hands, labels):
+                    if label is not None:
+                        draw_gesture(frame, hand[0], label)
 
                 recent_frames.append(monotonic_ns())
                 elapsed_ns = recent_frames[-1] - recent_frames[0]

@@ -1,8 +1,12 @@
-"""Draw hand landmarks and preview performance with OpenCV."""
+"""Draw hand landmarks, gesture labels, and FPS with OpenCV."""
 
 import cv2
 from mediapipe import tasks
 from mediapipe.tasks.python.components.containers import NormalizedLandmark
+
+
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+FONT_SCALE = 0.8
 
 
 def draw_landmarks(
@@ -22,7 +26,17 @@ def draw_landmarks(
 
 
 def draw_fps(frame: cv2.typing.MatLike, fps: float) -> None:
-    label = f"FPS: {fps:.1f}"
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(frame, label, (16, 32), font, 0.8, (0, 0, 0), 4, cv2.LINE_AA)
-    cv2.putText(frame, label, (16, 32), font, 0.8, (255, 255, 255), 1, cv2.LINE_AA)
+    _draw_text(frame, f"FPS: {fps:.1f}", (16, 32))
+
+
+def draw_gesture(frame: cv2.typing.MatLike, wrist: NormalizedLandmark, label: str) -> None:
+    height, width = frame.shape[:2]
+    (text_width, _), baseline = cv2.getTextSize(label, FONT, FONT_SCALE, 4)
+    x = max(6, min(round(wrist.x * (width - 1)), width - text_width - 6))
+    y = min(max(56, round(wrist.y * (height - 1)) + 24), height - baseline - 6)
+    _draw_text(frame, label, (x, y))
+
+
+def _draw_text(frame: cv2.typing.MatLike, label: str, origin: tuple[int, int]) -> None:
+    cv2.putText(frame, label, origin, FONT, FONT_SCALE, (0, 0, 0), 4, cv2.LINE_AA)
+    cv2.putText(frame, label, origin, FONT, FONT_SCALE, (255, 255, 255), 1, cv2.LINE_AA)
