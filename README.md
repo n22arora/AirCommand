@@ -32,10 +32,21 @@ Try these poses with your hand fully in view. Hold each pose briefly for its lab
 - **Open palm** by straightening all four fingers and extending your thumb away from your palm.
 - **Fist** by curling all four fingers and tucking your thumb across them.
 
+## Control Mac audio
+
+Launch with `--enable-controls` to let gestures change the Mac's output mute setting.
+
+```sh
+.venv/bin/python -m aircommand --enable-controls
+```
+
+With one hand in view, show an **open palm** and wait for its label. Then **pinch** to toggle mute. Holding the pinch toggles once. Show an open palm again before your next pinch. If you remove your hand or show two hands, show one open palm again to resume. The terminal reports whether the output was muted or unmuted. You can also check the output control in macOS Control Center.
+
 ## How the frame loop works
 
 - `camera.py` opens the webcam through AVFoundation and returns OpenCV BGR frames. Its context manager releases the camera when the loop exits or a frame read fails.
 - `hand_tracker.py` converts BGR to RGB and passes each frame to MediaPipe. Video mode reuses tracking information across frames. It returns normalized landmark coordinates for up to two hands.
 - `gestures.py` compares landmark distances as ratios, so the rules adapt as the hand changes size in the frame. Pinch compares the gap between the fingertips to palm width. For an open palm or a fist, it compares each finger's end-to-end reach with its length along the joints. Wrist position matches hands across frames, and a label changes after three consecutive frames agree.
+- `controls.py` turns the open-palm-to-pinch sequence into a single action. It uses macOS's built-in `osascript` to read and change output mute. [AppleScript volume commands](https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptLangGuide/reference/ASLR_cmds.html)
 - `overlay.py` maps normalized coordinates to pixels and draws the skeleton, gesture labels, and FPS in OpenCV.
 - `__main__.py` runs the preview loop and handles keyboard input. Its FPS calculation uses the last 30 frame timestamps to measure the rate of the preview loop, including capture and inference.
